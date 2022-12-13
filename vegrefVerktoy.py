@@ -9,7 +9,7 @@ testdata = ""
 nyDatasett = arcpy.management.CreateFeatureclass(arcpy.env.workspace, fcNavn + "_rute", "POLYLINE", fc,"DISABLED","DISABLED",25833)
 arcpy.Append_management(fc, nyDatasett)
 arcpy.management.AddField(nyDatasett, "kommentar", 'TEXT')
-fields = ["SHAPE@", "Vegsystemreferansefra","Vegsystemreferanse_til", "Kommentar"]
+fields = ["OID@","SHAPE@", "Vegsystemreferansefra","Vegsystemreferanse_til", "Kommentar"]
 kommentar = []
 
 #debugdata
@@ -41,7 +41,7 @@ def hentVegsysrefKorrd(vegsystemReferanse):
         
     elif r.status_code != 200:
         print('Not Found.')
-        kommentar.append("Kunne ikke hente vegsystemreferanse-koordinat")
+        kommentar = "Kunne ikke hente vegsystemreferanse-koordinat"
         
         return "SKIP!!"
     
@@ -79,7 +79,7 @@ def hentRute(fraKoord, tilKoord):
         # Create a Polyline object based on the array of points
         # Append to the list of Polyline objects
         linje = arcpy.Polyline(arcpy.Array([arcpy.Point(*coords) for coords in feature]),koordinatsystem.spatialReference)
-        print("Spatialreference", linje.spatialReference.exportToString())
+        # print("Spatialreference", linje.spatialReference.exportToString())
         polylinje = linje
 
             
@@ -92,13 +92,16 @@ def hentRute(fraKoord, tilKoord):
 delstrekninger = ""
 
 #Velger bare objekt nr 19
-whr = "OBJECTID < 20"
+whr = "OBJECTID < 30"
 # with arcpy.da.UpdateCursor(nyDatasett, fields, whr) as updateCursor:
-with arcpy.da.UpdateCursor(nyDatasett, fields) as updateCursor:    
+with arcpy.da.UpdateCursor(nyDatasett, fields) as updateCursor:  
+     
 
     for index,row in enumerate(updateCursor):
+        kommentar = "" 
         print(row)
-        print("{0} {1} {2} - {3}".format(row[0], row[3], row[1], row[2]))
+        radPrint = "{0} {1} {2} - {3}".format(row[0], row[4], row[2], row[3])
+        print(radPrint)
         # print(u'{0}, {1}, {2}, {3}'.format(row[0], row[1], row[2], row[3]))
         
         # if index == 6: # There's gotta be a better way.
@@ -106,27 +109,27 @@ with arcpy.da.UpdateCursor(nyDatasett, fields) as updateCursor:
         if index != 19: # There's gotta be a better way.
                 pass
         
-        if row[1] is None or row[2] is None:
+        if row[2] is None or row[3] is None:
             print("Her e det ingenting!")
             kommentar = "Mangler enten fra eller til referanse"
             
-            rad = [None,row[1], row[2], kommentar]
+            rad = [row[0],None,row[2], row[3], kommentar]
             testdata = [rad]
             print(rad)
             updateCursor.updateRow(rad)
             
             continue
         
-        pktFra = hentVegsysrefKorrd(row[1])
+        pktFra = hentVegsysrefKorrd(row[2])
         # print("Punkt fra {}".format(pktFra))
         
-        pktTil = hentVegsysrefKorrd(row[2])
+        pktTil = hentVegsysrefKorrd(row[3])
         # print("Punkt til {}".format(pktTil))
         
         
         
         if pktTil == "SKIP!!" or pktFra == "SKIP!!":
-            rad = [None,row[1], row[2], kommentar]
+            rad = [row[0],None,row[2], row[3], kommentar]
             testdata = [rad]
             print(rad)
             updateCursor.updateRow(rad)
@@ -137,17 +140,18 @@ with arcpy.da.UpdateCursor(nyDatasett, fields) as updateCursor:
         if pktTil != "SKIP!!" or pktFra != "SKIP!!":
             rute = hentRute(pktTil, pktFra)
             testdata = rute
-            print(rute)
+            # print(rute)
             # rute = hentRute(pktTil, pktFra, row[0])
             # Insert new rows that include the county name and the x and y coordinate
             # pair that represents the county center
 
             for r in rute:
-                print("Her er jeg ", r)
-                kommentar = "Linje-geometri hentet ned" if len(kommentar)==0 else kommentar
-                rad = [r,row[1], row[2], kommentar]
+                # print("Her er jeg ", r)
+                # print("Kommentar før linjegeometri\n" + kommentar + "{}".format(len(kommentar)))
+                kommentar = "Linje-geometri hentet ned"
+                rad = [row[0],r,row[2], row[3], kommentar]
                 testdata = [rad]
-                print(rad)
+                print("----------------------- || " + radPrint + "|| ------------------------------- \n\n\n ")
                 updateCursor.updateRow(rad)
 
         
