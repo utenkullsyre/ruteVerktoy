@@ -6,11 +6,13 @@ import regex as r
 # Funksjon som inneholder all koden som skal kjøres
 def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
     
-    #Setter opp env parametre
+
+    # Henter prosjekt-objektet
     aprx = arcpy.mp.ArcGISProject("CURRENT")
+    # Henter map-objektet
     mp = aprx.activeMap
-    arcpy.env.addOutputsToMap = True
-    arcpy.env.overwriteOutput = True
+    #Setter opp env parametre
+    arcpy.env.overwriteOutput = True # Skriver over gammelt script-resultat
     
     #Setter opp scriptvariabler
     fc = innDatasett
@@ -18,14 +20,17 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
     
     #Lager nytt datasett, laster over data fra input-data og legger til nydatasett i kartet
     nyDatasett = arcpy.management.CreateFeatureclass(arcpy.env.workspace, fcNavn + "_rute", "POLYLINE", fc,"DISABLED","DISABLED",koordinatSystem)
+    #Laster inn data fra input-datasett til nydatasett
     arcpy.Append_management(fc, nyDatasett)
+    # Legger til et felt som skal holde kommentarer
     arcpy.management.AddField(nyDatasett, "kommentar", 'TEXT')
+    # Legger til nydatasettet til det aktive kartet
     mp.addDataFromPath(nyDatasett)
     
     #Legger relevante felt i liste som skal brukes i UpdateCursor
     fields = ["OID@","SHAPE@", fraAttributt,tilAttributt, "Kommentar"]
     
-    #Kommentar-variabel som skal legges inn i 
+    #Kommentar-variabel som skal legges inn i rad
     kommentar = ""
 
     #Funksjon for å hente ned koordinater for vegsystemreferanse-posisjon
@@ -43,8 +48,6 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         if r.status_code == 200:
             #Lagrer resultatet som json
             resultat =  r.json()
-               
-            # testdata = resultat
             
             #Henter ut wkt-streng fra resultatet
             pktWKT = resultat['geometri']['wkt']
@@ -102,12 +105,12 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         features = []
         
         # Logging for loggingens skyld
-        arcpy.AddMessage(" --> lager geometri av koordinatpar\n")
+        arcpy.AddMessage(" --> lager geometri av resultatet\n")
         
         # Itererer gjennom linjesegmenter returnert fra rutetjenesten
         for feature in ruteGeometri:
             # Lager et polylinjeobjekt og legger dette til lista
-            linje = arcpy.Polyline(arcpy.Array([arcpy.Point(*coords) for coords in feature]),koordinatsystem.spatialReference)
+            linje = arcpy.Polyline(arcpy.Array([arcpy.Point(*coords) for coords in feature]),koordinatSystem)
             
             # polylinje = linje
 
@@ -118,9 +121,6 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         
         return  features
 
-    # Usikker på ka faen det her e
-    delstrekninger = ""
-
     # Lager en updatecursor for å iterere og oppdatere radene i det nye datasettet
     with arcpy.da.UpdateCursor(nyDatasett, fields, query) as updateCursor:        
 
@@ -129,7 +129,6 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
             
             # Deklarerer en kommentar-variabel som skal brukes senere 
             kommentar = "" 
-            # radPrint = "{0} {1} {2} - {3}".format(row[0], row[4], row[2], row[3])
             
             # Logger at scriptet har begynt med denne raden
             arcpy.AddMessage("\n\n-----------------------------------------------\nForsøker å laste ned geometri for ID: {}  -- Pkt fra: {} | Pkt til: {}\n".format(row[0], row[2], row[3]))
@@ -140,7 +139,6 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                 kommentar = "FEIL: Mangler enten fra eller til referanse"
                 #Legger inn data som skal lagres tilbake i raden
                 rad = [row[0],None,row[2], row[3], kommentar]
-                # testdata = [rad]
                 # Logger feilmelding 
                 arcpy.AddWarning(" !!  fant ikke fra eller til referanse, går til neste rad !! \n\n")
                 # Lagrer dataene i raden
@@ -174,7 +172,7 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                 rad = [row[0],None,row[2], row[3], kommentar]
 
                 # Logger for å vise hvilket punkt som feilet
-                arcpy.AddWarning("Objekt med ID {}: {}\n{}\n\n".format(row[0], kommentar,",".join(responseData)))
+                arcpy.AddWarning(" !! Objekt med ID {}: {} !! \n{}\n\n".format(row[0], kommentar,",".join(responseData)))
                 
                 # Lagrer data til rad
                 updateCursor.updateRow(rad)
@@ -188,7 +186,6 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                 
                 # Kjører hentRute funksjon
                 rute = hentRute(pktTil[0], pktFra[0])
-                # testdata = rute
 
                 # Lager en iterasjon i tilfelle rute-funksjon har levert mer enn en geometri. 
                 for r in rute:
@@ -196,7 +193,6 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                     kommentar = "Linje-geometri hentet ned"
                     # Oppdaterer rad-info
                     rad = [row[0],r,row[2], row[3], kommentar]
-                    # testdata = [rad]
                     # Legger til logging for å vise fremgang
                     arcpy.AddMessage(" * Generert linje-geometri for objekt med id {} * \n\n".format(row[0]))
                     # Lagrer rad-data
