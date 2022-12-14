@@ -40,8 +40,9 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         
         urlKoord = "https://nvdbapiles-v3.atlas.vegvesen.no/veg?vegsystemreferanse=" + str(vegsystemReferanse)
         # print(urlKoord)
-        
-        r = requests.get(urlKoord)
+        headers = {'X-Client':"ArcGis Pro verktøy: Hent rute (tobors)"}
+    
+        r = requests.get(urlKoord, headers=headers)
         
         # print(r.text)
         
@@ -84,7 +85,10 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         
         # print(PARAMS['stops'])
         
-        r = requests.get(url = urlRute, params = PARAMS)
+        headers = {'X-Client':"ArcGis Pro verktøy: Hent rute (tobors)"}
+        arcpy.AddMessage(" --> sender spørring til ruteplanleggeren\n")
+        arcpy.AddMessage(" ---> koordinatpar: {}".format(PARAMS["stops"]))
+        r = requests.get(url = urlRute, params = PARAMS, headers=headers)
         
         #debug kode
         # print(r.text)
@@ -95,7 +99,7 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         
         
         features = []
-
+        arcpy.AddMessage(" --> lager geometri av koordinatpar\n")
         for feature in ruteGeometri:
             # Create a Polyline object based on the array of points
             # Append to the list of Polyline objects
@@ -142,6 +146,7 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                 
                 continue
             
+            arcpy.AddMessage(" --> henter koordinater for vegsystemreferanser\n")
             pktFra = hentVegsysrefKorrd(row[2])
             # print("Punkt fra {}".format(pktFra))
             
@@ -183,7 +188,7 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                     kommentar = "Linje-geometri hentet ned"
                     rad = [row[0],r,row[2], row[3], kommentar]
                     testdata = [rad]
-                    arcpy.AddMessage("Lastet ned linje geometri for objekt med id {}\n".format(row[0]) + radPrint + "\n\n" )
+                    arcpy.AddMessage(" * Generert linje-geometri for objekt med id {} * \n\n".format(row[0]))
                     updateCursor.updateRow(rad)
 
             
