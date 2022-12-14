@@ -132,12 +132,12 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
             
             if row[2] is None or row[3] is None:
                 print("Her e det ingenting!")
-                kommentar = "Mangler enten fra eller til referanse"
+                kommentar = "FEIL: Mangler enten fra eller til referanse"
                 
                 rad = [row[0],None,row[2], row[3], kommentar]
                 testdata = [rad]
                 
-                arcpy.AddMessage("Fant ikke fra eller til referanse, går til neste rad\n\n")
+                arcpy.AddWarning("Fant ikke fra eller til referanse, går til neste rad\n\n")
                 updateCursor.updateRow(rad)
                 
                 continue
@@ -159,11 +159,11 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
                 if pktTil[0] == "Error":
                     manglerKoordinat.append("Pkt til")
                     responseData.append("Pkt til responsedata: \n{}".format(pktTil[1]))
-                kommentar = "Fant ikke koordinat på: {}".format(",".join(manglerKoordinat))
+                kommentar = "FEIL: Fant ikke koordinat på: {}".format(",".join(manglerKoordinat))
                 
                 rad = [row[0],None,row[2], row[3], kommentar]
                 testdata = [rad]
-                arcpy.AddMessage("Objekt med ID {}: {}\n{}\n\n".format(row[0], kommentar,",".join(responseData)))
+                arcpy.AddWarning("Objekt med ID {}: {}\n{}\n\n".format(row[0], kommentar,",".join(responseData)))
                 updateCursor.updateRow(rad)
                 
             
