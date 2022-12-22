@@ -39,22 +39,23 @@ def eksporterKart(layout,eksport_format, eksport_folder):
             arcpy.AddMessage("Finner ikke layout navn, bruker defaultnavn\n{}".format(e))
         finally:
             pass
-        arcpy.AddMessage("\n------------- Eksporterer layout: {}-------------".format(kartNavn))
+        arcpy.AddMessage("\n------------- Eksporterer layout: '{}' -------------".format(kartNavn))
+        arcpy.AddMessage("-> kartene blir eksportert til {}".format(eksport_folder))
         for format in eksport_format:
             if format == 'EPS':
-                arcpy.AddMessage("--- eksporterer til {}".format(format))
+                arcpy.AddMessage("--> eksporterer til {}".format(format))
                 ly.exportToEPS(r"{}\{}".format(eksport_folder, kartNavn)) 
             elif format == 'SVG':
-                arcpy.AddMessage("--- eksporterer til {}".format(format))
+                arcpy.AddMessage("--> eksporterer til {}".format(format))
                 ly.exportToSVG(r"{}\{}".format(eksport_folder, kartNavn))
             elif format == 'PDF':
-                arcpy.AddMessage("--- eksporterer til {}".format(format))
+                arcpy.AddMessage("--> eksporterer til {}".format(format))
                 ly.exportToPDF(r"{}\{}".format(eksport_folder, kartNavn))
             elif format == 'JPG':
-                arcpy.AddMessage("--- eksporterer til {}".format(format))
+                arcpy.AddMessage("--> eksporterer til {}".format(format))
                 ly.exportToJPEG(r"{}\{}".format(eksport_folder, kartNavn), resolution=300)
             elif format == 'PNG':
-                arcpy.AddMessage("--- eksporterer til {}".format(format))
+                arcpy.AddMessage("--> eksporterer til {}".format(format))
                 ly.exportToPNG(r"{}\{}".format(eksport_folder, kartNavn), resolution=300)
 
 #Eksporterer ut layout til EPS, SVG, PDF og JPEG. eksport_folder er fil-banen til mappa som kartene skal lagres i

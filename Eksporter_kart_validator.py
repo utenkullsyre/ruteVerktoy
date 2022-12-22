@@ -13,7 +13,7 @@ class ToolValidator:
         pr = arcpy.mp.ArcGISProject("CURRENT")
         layOuts = pr.listLayouts()
         self.params[0].value = [x.name for x in layOuts] 
-        #self.params[0].filter.list = [x.name for x in layOuts] 
+        self.params[0].filter.list = [x.name for x in layOuts] 
         return
 
     def updateParameters(self):
@@ -34,7 +34,10 @@ class ToolValidator:
     def updateMessages(self):
         # Customize messages for the parameters.
         # This gets called after standard validation 
-        
+        pr = arcpy.mp.ArcGISProject("CURRENT")
+        layOuts = [x.name for x in pr.listLayouts()]
+        if len(pr.listLayouts()) == 0:
+            self.params[0].addErrorMessage("Finner ingen layouter i prosjektet")
         return
 
     # def isLicensed(self):
