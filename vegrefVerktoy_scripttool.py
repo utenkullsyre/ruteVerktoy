@@ -2,10 +2,12 @@
 import os
 import requests
 import regex as r
+from datetime import datetime
 
 # Funksjon som inneholder all koden som skal kjøres
-def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
-    
+def ScriptTool(innDatasett, fraAttributt, tilAttributt, dato, koordinatSystem, query):
+
+
 
     # Henter prosjekt-objektet
     aprx = arcpy.mp.ArcGISProject("CURRENT")
@@ -13,10 +15,15 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
     mp = aprx.activeMap
     #Setter opp env parametre
     arcpy.env.overwriteOutput = True # Skriver over gammelt script-resultat
+    #arcpy.AddMessage(dato)
     
     #Setter opp scriptvariabler
     fc = innDatasett
     fcNavn = arcpy.Describe(fc).name
+
+    dato_obj = datetime.strptime(dato, "%d.%m.%Y")
+    
+    #arcpy.AddMessage("{}-{}-{}".format(dato_obj.day,dato_obj.month,dato_obj.year))
     
     #Lager nytt datasett, laster over data fra input-data og legger til nydatasett i kartet
     nyDatasett = arcpy.management.CreateFeatureclass(arcpy.env.workspace, fcNavn + "_rute", "POLYLINE", fc,"DISABLED","DISABLED",koordinatSystem)
@@ -34,9 +41,12 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
     kommentar = ""
 
     #Funksjon for å hente ned koordinater for vegsystemreferanse-posisjon
-    def hentVegsysrefKorrd(vegsystemReferanse):
+    def hentVegsysrefKorrd(vegsystemReferanse, dato):
+        #Bygger tidspunkt parameter
+        
+        tid = "&tidspunkt={}-{:02d}-{:02d}".format(dato_obj.year,dato_obj.month,dato_obj.day)
         #Lager url som skal sendes
-        urlKoord = "https://nvdbapiles-v3.atlas.vegvesen.no/veg?vegsystemreferanse=" + str(vegsystemReferanse)
+        urlKoord = "https://nvdbapiles-v3.atlas.vegvesen.no/veg?vegsystemreferanse=" + str(vegsystemReferanse) + tid
         
         #Viktig med X-Client header til NVDB-APIet
         headers = {'X-Client':"ArcGis Pro verktøy: Hent rute (tobors)"}
@@ -74,6 +84,7 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
         
     # Funksjon for å laste ned linje-geometri fra ruteplanleggeren
     def hentRute(fraKoord, tilKoord):
+        
         # Setter opp url til tjeneste, dette er den offentlige med begrensninger
         urlRute = "https://www.vegvesen.no/ws/no/vegvesen/ruteplan/routingservice_v2_0/open/routingservice?"
         
@@ -151,8 +162,8 @@ def ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query):
             arcpy.AddMessage(" --> henter koordinater for vegsystemreferanser\n")
             
             # Henter koordinater for pktFra og pktTil
-            pktFra = hentVegsysrefKorrd(row[2])            
-            pktTil = hentVegsysrefKorrd(row[3])            
+            pktFra = hentVegsysrefKorrd(row[2], dato)            
+            pktTil = hentVegsysrefKorrd(row[3], dato)            
             
             # Sjekker om hentVegsysrefKoord funksjon har returnert en feil, og bruker en veldig knotete og dum metodikk for å løse dette på
             if pktTil[0] == "Error" or pktFra[0] == "Error":
@@ -205,13 +216,14 @@ if __name__ == '__main__':
 
     # Verktøy-parametre satt av bruker hentes ned med GetParameter or GetParameterAsText
     innDatasett = arcpy.GetParameterAsText(0)
-    fraAttributt = arcpy.GetParameterAsText(1)
-    tilAttributt = arcpy.GetParameterAsText(2)
-    koordinatSystem = arcpy.GetParameterAsText(3)
-    query = arcpy.GetParameterAsText(4)
+    fraAttributt = arcpy.GetParameterAsText(2)
+    tilAttributt = arcpy.GetParameterAsText(3)
+    dato = arcpy.GetParameterAsText(4)
+    koordinatSystem = arcpy.GetParameterAsText(5)
+    query = arcpy.GetParameterAsText(6)
     
     # Kjører verktøyet
-    ScriptTool(innDatasett, fraAttributt, tilAttributt, koordinatSystem, query)
+    ScriptTool(innDatasett, fraAttributt, tilAttributt, dato, koordinatSystem, query)
     
     
     # Her kan du sende tilbake informasjon til verktøyet ved å bruke arcpy.SetParameter() or arcpy.SetParameterAsText()
